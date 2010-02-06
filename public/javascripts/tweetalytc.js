@@ -16,6 +16,38 @@ function Tweetalytc() {
 	};
 	
 	/**
+	 * Loads all relevant user information for a given screen name.
+   * @param screen_name Name of the user for which to fetch the information.
+   * @praam callback Function to call when all requests have been made.
+   */
+	this.loadUser = function(screen_name, callback) {
+		var user;
+		var tweetalytc = this;
+		var twitter = new Twitter();
+		
+		// First load the user data from twitter...
+		twitter.getUser(screen_name, function(userData) {
+			user = userData;			
+			
+			// Next load the timeline data...
+			twitter.getUserTimeline(screen_name, 1, function(timeline) {
+				user.timeline = tweetalytc.processTimeline(timeline);			
+					
+				// Next load the followers information...
+				twitter.getFollowers(screen_name, function(followers) {
+					user.followers = tweetalytc.processUsers(followers);
+					
+						// Finally load the friends information and make the callback.
+						twitter.getFriends(screen_name, function(friends) {
+							user.friends = tweetalytc.processUsers(friends);
+							callback(user);
+						});
+				});
+			});
+		});
+	};
+	
+	/**
 	 * Processes timelines and extracts data from Twitter API responses. Specifically it buckets
 	 * all of the statuses by day and collects totals and averages over the statuses in the
 	 * timeline.
@@ -59,8 +91,9 @@ function Tweetalytc() {
 				// Calculate averages if need be
 				if (lastDate != null) {
 					var lastIndex = stats.days.length-1;
+					var lastDay = stats.days[lastIndex];
 					stats.days[lastIndex].average_status_length = 
-						stats.days[lastIndex].total_statuses_length / stats.days[lastIndex].statuses.length;
+						new Number(lastDay.total_statuses_length / lastDay.statuses.length).toFixed(2);
 				}
 				
 				// Calculate velocity if need be
@@ -84,12 +117,47 @@ function Tweetalytc() {
 			stats.total_statuses_length += entry.text.length;
 			var dayIndex = stats.days.length - 1;
 			stats.days[dayIndex].statuses.push(entry);
-			stats.days[dayIndex].total_length += entry.text.length;	
+			stats.days[dayIndex].total_statuses_length += entry.text.length;	
 		}
 		
-		stats.average_status_length = stats.total_statuses_length / timeline.length;
-		stats.average_statuses_per_day = timeline.length / stats.days.length;
+		if (timeline.length > 0) {
+			stats.average_status_length = new Number(stats.total_statuses_length / timeline.length).toFixed(2);
+		}
+		
+		if (stats.days.length > 0) {
+			stats.average_statuses_per_day = new Number(timeline.length / stats.days.length).toFixed(2);
+		}
 		
 		return stats;
 	};
+	
+	/**
+	 * Processes a list of users and derives statistics. Specifically this method
+	 * returns a statistics hash that contains the following keys:
+	 *
+	 *   users - The original list of users.  
+	 *   retweet_potential - Total number of followers of given users.
+	 *   avg_retweet_potential - Average number of followers of given users.
+	 *
+	 * @param users Users to process.
+	 */
+	this.processUsers = function(users) {
+		var stats = {
+			users: users,
+			retweet_potential: 0,
+			avg_retweet_potential: 0
+		}
+		
+		for (var i = 0; i < users.length; i++) {
+			stats.retweet_potential += users[i].followers_count;
+		}
+		
+		if (users.length > 0) {
+			stats.avg_retweet_potential = stats.retweet_potential / users.length;
+		}
+		
+		return stats;
+	};
+	
+	
 }

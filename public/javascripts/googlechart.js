@@ -159,6 +159,18 @@ function GoogleChart() {
 		this.markers.push(markerAry.join(','));
 	};
 	
+	/** 
+	 * Adds a new range marker to the chart.
+	 * @param type Either GoogleChart.RANGE_HORIZONTAL or GoogleChart.RANGE_VERTICAL.
+	 * @param color Marker color (in six hexidecimal digit format). 
+	 * @param start Start position for the range marker.
+	 * @param end End position for the range marker.
+	 */
+	this.addRangeMarker = function(type, color, start, end) {
+		var markerAry = [type, color, 0, start, end];
+		this.markers.push(markerAry.join(','));
+	};
+	
 	/**
 	 * Clears all chart markers associated with the chart.
 	 */
@@ -193,6 +205,8 @@ GoogleChart.X = 'x';
 GoogleChart.VERTICAL = 'v';
 GoogleChart.VERTICAL_CHART = 'V';
 GoogleChart.HORIZONTAL = 'h';
+GoogleChart.RANGE_HORIZONTAL = 'r';
+GoogleChart.RANGE_VERTICAL = 'R';
 
 /**
  * Used to mark all data points.
@@ -219,13 +233,17 @@ GoogleChart.WEEKLY = 2;
  * Static helper function for creating charts based on timeline results returned
  * from the Tweetalytc statistics engine.
  * @param stats Processed timeline statistics.
- * @parma frequency How often to sample data points.
- * @param dataPoints Total number of sample data points to display. 
+ * @param metric (Default: statuses) Metric for the chart (statuses, tweet_length, velocity).
+ * @param dataPoints (Default: 10) Total number of sample data points to display. 
+ * @parma frequency (Default: GoogleChart.DAILY) How often to sample data points.
  * @return A GoogleChart object representing the chart.
  */
-GoogleChart.timelineChart = function(stats, frequency, dataPoints) {
-	if (frequency == null) { frequency = GoogleChart.DAILY;	}
+GoogleChart.timelineChart = function(stats, metric, dataPoints, frequency) {
+	if (metric != 'statuses' && metric != 'tweet_length' && metric != 'velocity') {
+		metric = 'statuses';
+	}
 	if (dataPoints == null) {	dataPoints = 10; }
+	if (frequency == null) { frequency = GoogleChart.DAILY;	}
 	
 	var chart = new GoogleChart();
 	var dataSet = [];
@@ -239,7 +257,16 @@ GoogleChart.timelineChart = function(stats, frequency, dataPoints) {
 			if (dataPoints == 0) { break; }
 			dataPoints--;
 			
-			var count = stats.days[i].statuses.length;
+			var count;
+			if (metric == 'statuses') {
+				count = stats.days[i].statuses.length;
+			}
+			else if (metric == 'tweet_length') {
+				count = stats.days[i].average_status_length;
+			}
+			else if (metric == 'velocity') {
+				count = stats.days[i].velocity;
+			}
 			
 			if (count > max) { max = count; }
 			if (min == null || count < min) { min = count; }
@@ -247,7 +274,7 @@ GoogleChart.timelineChart = function(stats, frequency, dataPoints) {
 			dataSet.push(count);
 			
 			var date = stats.days[i].date;
-			var dateLabel = date.getMonth() + "/" + date.getDate();
+			var dateLabel = (date.getMonth()+1) + "/" + date.getDate();
 			labels.push(escape(dateLabel));
 		}
 		dataSet.reverse();
@@ -256,15 +283,36 @@ GoogleChart.timelineChart = function(stats, frequency, dataPoints) {
 	
 	// Add data set to the chart
 	chart.addDataSet(dataSet);
-	chart.setDataScaling(0, max);
 	
 	// Label and style the chart
+	if (min < 0 && max >= -min) {
+		min = -max;
+	}
+	else if (min < 0 && max < -min) {
+		max = -min;
+	}
+	else {
+		min = 0;
+	}
+
+	
+	var yLabels = [
+		new Number(min).toFixed(0),
+		new Number(min + (max-min) / 4).toFixed(0),
+		new Number(min + (max-min) / 2).toFixed(0),
+		new Number(min + 3*(max-min) / 4).toFixed(0),
+		new Number(max).toFixed(0)
+	];
+	
 	chart.addAxisLabels('x', labels);
-	chart.addAxisLabels('y', [0, max/4, max/2, 3*max/4, max]); // Disregarding minimum for now ;)
-	
-	
+	chart.addAxisLabels('y', yLabels);
+	chart.setDataScaling(min, max);
 	chart.setChartColor('555555');
 	chart.addChartMarker(GoogleChart.CIRCLE, '000099', 0, -1, 5);
+
+	if (min < 0) {
+		chart.addRangeMarker(GoogleChart.RANGE_HORIZONTAL, 'BBBBBB', .49, .50);
+	}
 
 	// Return the chart :)
 	return chart;

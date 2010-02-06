@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Tweetaly.tc <%= @title %></title>
+		<%= stylesheet_link_tag "tweetalytc.base", "tweetalytc.home" %>
+	</head>
+	<body>
+		<div id="page-wrapper">
+			<h1><a href="/">tweetaly.tc</a></h1>
+			<div class="content"><%= yield :content %></div>
+			<div id="footer">
+				<p id="bottom-nav">
+					<a href="/">home</a></li>
+					<a href="about">about</a></li>
+				</p>
+				<p class="copyright">
+					Copyright 2010 Ryan Sandor Richards (<a href="http://twitter.com/rsandor" target="_blank">@rsandor</a>)
+					<a target="_blank" href="http://en.wikipedia.org/wiki/MIT_License">MIT License</a>
+				</p>
+			</div>
+		</div>
+<%= javascript_include_tag "jquery-1.4.min", "twitter" %>
+<%= yield :script %>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-12733731-1");
+pageTracker._setDomainName(".tweetaly.tc");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+	</body>	
+</html>

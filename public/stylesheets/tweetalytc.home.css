@@ -1,0 +1,28 @@
+/*
+ * tweetalytc.home.css
+ * Styles for the tweetaly.tc home page
+ * By Ryan Sandor Richards
+ * Tuesday February 2nd, 2010
+ */
+#page-wrapper {
+	width: 320px;
+	margin: 60px auto;
+}
+
+h1 {
+	width: 320px;
+	height: 72px;
+	background: white url(../images/logo.gif) top left no-repeat;
+	margin-top: 12px;
+}
+
+h1 a {
+	display: block;
+	width: 320px;
+	height: 72px;
+	text-indent: -9999px;
+}
+
+code {
+	font-size: 10pt;
+}

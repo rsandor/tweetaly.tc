@@ -72,8 +72,13 @@ function Twitter() {
 	 * @param screen_name Name of the user for which to get timeline data.
 	 * @param pages Maximum number of pages to retrieve.
 	 * @param callback Function to call when the final response is obtained.
+	 * @throws Exception if the screen name is invalid.
 	 */
 	this.getExtendedTimeline = function(screen_name, pages, callback) {
+		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
+			throw "Invalid screen name: " + screen_name;
+		}
+		
 		var totalTimeline = [];
 		var twitter = this;
 		function request(page) {
@@ -93,5 +98,47 @@ function Twitter() {
 		}
 		
 		request();
+	};
+	
+	
+	/** 
+	 * Returns a detailed list of the first 100 followers of a given user.
+	 * @param screen_name Name of the user for which to fetch the followers.
+	 * @param callback Function to call when the response has been returned.
+	 */
+	this.getFollowers = function(screen_name, callback) {
+		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
+			throw "Invalid screen name: " + screen_name;
+		}
+		this.makeRequest('statuses/followers', {screen_name: screen_name}, callback);
+	};
+	
+	/** 
+	 * Returns a detailed list of the first 100 friends of a given user.
+	 * @param screen_name Name of the user for which to fetch the friends.
+	 * @param callback Function to call when the response has been returned.
+	 */
+	this.getFriends = function(screen_name, callback) {
+		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
+			throw "Invalid screen name: " + screen_name;
+		}
+		this.makeRequest('statuses/friends', {screen_name: screen_name}, callback);
+	};
+	
+	/**
+	 * Returns a detailed list of followers for a given user. Because of limitations imposed by the
+	 * twitter API we can only request 100 followers at a time. For "normal" users this is fine, but
+	 * for "super" users this can pose a problem.
+	 * 
+	 * In order to collect more than 100 followers use the pages parameter to set the number of pages
+	 * of information you would like compiled into a basic list. Remember each page represents a single
+	 * request and users are limited to 150 requests / hour, so use wisely.
+	 *
+	 * @param screen_name Name of the user of which to request the followers.
+	 * @param pages Number of pages to retrieve.
+	 * @param callback Function to call when all of the pages have been retrieved.
+	 */
+	this.getManyFollowers = function(screen_name, pages, callback) {
+		// TODO Implement me... if needed
 	};
 }

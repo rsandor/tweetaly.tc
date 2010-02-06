@@ -1,0 +1,113 @@
+<% content_for :content do %>
+<div id="loading">Loading... Please wait</div>
+
+<div id="templates" style="display: none">
+	<div class="results" style="display: none">
+		<h2>Tweetalytics</h2>
+		<div id="stats">
+			<div>
+				<p class="tweets"><label>Tweets:</label> </p>
+				<p class="followers"><label>Followers:</label> </p>
+			</div>
+
+			<div class="on">
+				<p class="avg_tweets_per_day"><label>Avg. Tweets / Day:</label> </p>
+				<p class="friends"><label>Friends:</label> </p>
+			</div>
+
+			<div>
+				<p class="avg_tweet_length"><label>Avg. Tweet Length:</label> </p>
+				<p class="retweet_potential"><label>Retweet Potential:</label> </p>
+			</div>
+
+			<div class="on">
+				<p class="current_velocity"><label>Current Tweet Velocity:</label> </p>
+				<p class="avg_retweet_potential"><label>Avg. Retweet Potential:</label> </p>
+			</div>
+			<br style="clear: both" />
+		</div>
+
+		<div id="charts">
+		</div>
+		<br style="clear: both" />
+	</div>
+	
+	<div class="chart">
+		<h2></h2>
+		<img src="" />
+	</div>
+</div>
+
+<% end %>
+
+<% content_for :script do %>
+<script type="text/javascript">
+var screen_name = '<%= @screen_name %>';
+var user;
+var engine = new Tweetalytc();
+
+$(function() {
+	
+	function createChart(title, metric, user) {
+		var gchart = GoogleChart.timelineChart(user.timeline, metric);
+		var $chart = $('#templates .chart').clone();
+		$chart.children('h2').html(title);
+		$chart.children('img').attr('src', gchart.getURL());
+		return $chart;
+	}
+	
+	function createReport(userData) {
+		user = userData;
+		
+		// Create the results div
+		var $results = $('#templates .results').clone();
+		$('#loading').after($results);
+		
+		// Basic statistics
+		$results.find('.tweets').append(user.statuses_count);
+		$results.find('.followers').append(user.followers_count);
+		$results.find('.friends').append(user.friends_count);
+		
+		var timeline = user.timeline;
+		$results.find('.avg_tweets_per_day').append(timeline.average_statuses_per_day);
+		$results.find('.avg_tweet_length').append(timeline.average_status_length);
+		$results.find('.current_velocity').append(timeline.days[0].velocity)
+		
+		var followers = user.followers;
+		$results.find('.retweet_potential').append(followers.retweet_potential);
+		$results.find('.avg_retweet_potential').append(followers.avg_retweet_potential);
+		
+		// Generate the basic charts
+		var $tweetsByDay = createChart('Tweets', 'statuses', user);
+		$results.children('#charts').append($tweetsByDay);
+		
+		var $lengthByDay = createChart('Average Tweet Length', 'tweet_length', user);
+		$results.children('#charts').append($lengthByDay);
+		
+		var $velocityByDay = createChart('Velocity', 'velocity', user);
+		$results.children('#charts').append($velocityByDay);
+		
+		// Show the report
+		$('#loading').hide();
+		$results.fadeIn(500);
+	}
+	
+	// Search events
+	function user_search() {
+		var name = $('#n').val();
+		if (!name.match(/^[a-zA-Z0-9]+$/)) {
+			alert('Invalid username!');
+			return;
+		}
+		window.location = '../users/' + name;
+	}
+	$('#g').click(user_search);
+	$('#n').keydown(function(event) {
+		if (event.keyCode == 13) { user_search(); }
+	});
+	
+	// Load user information and display statistics
+	engine.loadUser(screen_name, createReport);
+});
+</script>
+<% end %>

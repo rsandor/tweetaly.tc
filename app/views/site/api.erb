@@ -1,0 +1,28 @@
+<% content_for :content do %>
+	<h2>api</h2>
+	<p>The tweetaly.tc REST API (version 0.1 alpha) currently consists of a single
+	web service that returns a user analytics information given a Twitter screen
+	name. To access the service use the following URL:</p>
+	
+	<p style="font-family: courier; font-size: 10pt; text-align: center">http://tweetaly.tc/user/<em>id</em>.<em>format</em></p>
+	
+	<h3>parameters</h3>
+	<ul style="padding-left: 1.1em">
+		<li><code><em>id</em></code> - a valid Twitter user id or screen name</li>
+		<li><code><em>format</em></code> - html (default), xml, json</li>
+	</ul></p>
+	
+	<h3>formats</h3>
+	<p>The XML and JSON response types contain all the information provided on the normal HTML
+		version of the user's page and also the weekly analytics data required to create the three
+		basic graphs.</p>		
+		
+	<h3>conclusion</h3>
+	
+	<p>I hope you find the service as useful as I found it fun to make! Thanks for visiting the
+		site and if you have any questions, comments, concerns or suggestions please feel free
+		to contact me via Twitter.</p>
+	
+	<p>-- Ryan Sandor Richards (<a href="#">@rsandor</a>)</p>
+	
+<% end %>

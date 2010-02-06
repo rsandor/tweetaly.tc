@@ -1,0 +1,81 @@
+/*
+ * tweetalytc.user.css
+ * Styles for the tweetaly.tc user pages
+ * By Ryan Sandor Richards
+ * Tuesday February 2nd, 2010
+ */
+#page-wrapper {
+	width: 966px;
+	margin: 24px auto;
+}
+
+h1 {
+	height: 79px;
+	padding: 0 150px 0 48px;
+	font-weight: normal;
+	font-size: 36pt;
+	background: white url(../images/user_header.gif) 0px 6px no-repeat;
+	margin-top: 0;
+	float: left;
+}
+
+.search {
+	margin-top: 24px;
+	float: right;
+}
+
+.sign-in {
+	margin: 16px 0 12px 0;
+}
+
+#stats div {
+	font-size: 12pt;
+	width: 232px;
+	padding: 4px;
+	float: left;
+	text-align: center;
+	background: #dedede;
+}
+
+#stats div.on {
+	background-color: #efefef;
+}
+
+#stats div label {
+	font-weight: bold;
+}
+
+.note {
+	font-size: 9pt;
+	color: #aaa;
+	font-style: italic;
+	margin-top: 8px;
+	font-family: sans-serif;
+	margin-bottom: 22px;
+}
+
+#charts div {
+	width: 300px;
+	margin: 0 9px;
+	float: left;
+}
+
+#charts div img {
+}
+
+#charts div.divider {
+}
+
+#charts div h2 {
+	text-align: center;
+	border-bottom: 1px solid #aaa;
+}
+
+#loading {
+	text-align: center;
+	font-size: 22pt;
+	color: #999;
+	margin-top: 24px;
+}
+
+

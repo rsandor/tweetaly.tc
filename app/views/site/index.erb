@@ -1,0 +1,26 @@
+<% content_for :content do %>
+<div class="search">
+	<%= image_tag "at.gif", :alt => "@" %>
+	<input class="screen-name inactive" type="text" id="n" value="" />
+	<a style="cursor: pointer" id="g"><%= image_tag "get_alytics.gif", :alt => "get 'alytics" %></a>
+</div>
+<% end %>
+
+<% content_for :script do %>
+<script type="text/javascript">
+$(function() {
+	function user_search() {
+		var name = $('#n').val();
+		if (!name.match(/^[a-zA-Z0-9]+$/)) {
+			alert('Invalid username!');
+			return;
+		}
+		window.location = 'users/' + name;
+	}
+	$('#g').click(user_search);
+	$('#n').keydown(function(event) {
+		if (event.keyCode == 13) { user_search(); }
+	});
+});
+</script>
+<% end %>

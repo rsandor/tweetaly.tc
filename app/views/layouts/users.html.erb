@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>@<%= @screen_name %> on tweetaly.tc</title>
+		<%= stylesheet_link_tag "tweetalytc.base", "tweetalytc.user" %>
+	</head>
+	<body>
+		<div id="page-wrapper">
+			<div id="header">
+				<h1><%= @screen_name %></h1>
+				<div class="search">
+					<%= image_tag "at.gif", :alt => "@" %>
+					<input class="screen-name inactive" type="text" id="n" value="" />
+					<a style="cursor: pointer" id="g"><%= image_tag "get_alytics.gif", :alt => "get 'alytics" %></a>
+				</div>
+				<br style="clear: both" />
+			</div>
+			<div class="content"><%= yield :content %></div>
+			<div id="footer">
+				<p id="bottom-nav">
+					<a href="/">home</a></li>
+					<a href="about">about</a></li>
+				</p>
+				<p class="copyright">
+					Copyright 2010 Ryan Sandor Richards (<a href="http://twitter.com/rsandor" target="_blank">@rsandor</a>)
+					<a target="_blank" href="http://en.wikipedia.org/wiki/MIT_License">MIT License</a>
+				</p>
+			</div>
+		</div>
+<%= javascript_include_tag "jquery-1.4.min", "twitter", "tweetalytc", "googlechart" %>
+<%= yield :script %>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+try {
+var pageTracker = _gat._getTracker("UA-12733731-1");
+pageTracker._setDomainName(".tweetaly.tc");
+pageTracker._trackPageview();
+} catch(err) {}</script>
+	</body>	
+</html>
