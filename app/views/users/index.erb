@@ -1,32 +1,44 @@
 <% content_for :content do %>
+
+<p id="rate-limit" style="display: none">
+	Remaining Twitter Updates: <span class="remaining-hits"></span>, 
+	reset at <span class="reset-time"></span>
+</p>
+
 <div id="loading">Loading... Please wait</div>
 
 <div id="templates" style="display: none">
-	<div class="results" style="display: none">
-		<h2>Tweetalytics</h2>
+	<div class="report" style="display: none">
+		<h2>
+			Tweetalytics - Sampling 
+			<span class="num-tweets"></span> tweets and 
+			<span class="num-followers"></span> followers
+		</h2>
 		<div id="stats">
 			<div>
-				<p class="tweets"><label>Tweets:</label> </p>
-				<p class="followers"><label>Followers:</label> </p>
+				<p><label>Tweets:</label> <span class="tweets"></span></p>
+				<p><label>Followers:</label> <span class="followers"></span></p>
 			</div>
 
 			<div class="on">
-				<p class="avg_tweets_per_day"><label>Avg. Tweets / Day:</label> </p>
-				<p class="friends"><label>Friends:</label> </p>
+				<p><label>Avg. Tweets / Day:</label> <span class="avg_tweets_per_day"></span></p>
+				<p><label>Friends:</label> <span class="friends"></span></p>
 			</div>
 
 			<div>
-				<p class="avg_tweet_length"><label>Avg. Tweet Length:</label> </p>
-				<p class="retweet_potential"><label>Retweet Potential:</label> </p>
+				<p><label>Avg. Tweet Length:</label> <span class="avg_tweet_length"></span></p>
+				<p><label>Retweet Potential:</label> <span class="retweet_potential"></span></p>
 			</div>
 
 			<div class="on">
-				<p class="current_velocity"><label>Current Tweet Velocity:</label> </p>
-				<p class="avg_retweet_potential"><label>Avg. Retweet Potential:</label> </p>
+				<p><label>Current Tweet Velocity:</label> <span class="current_velocity"></span></p>
+				<p><label>Avg. Retweet Potential:</label> <span class="avg_retweet_potential"></span></p>
 			</div>
 			<br style="clear: both" />
 		</div>
-
+		
+		<p><a class="refine">Add more tweets and followers!</a></p>
+		
 		<div id="charts">
 		</div>
 		<br style="clear: both" />
@@ -35,6 +47,7 @@
 	<div class="chart">
 		<h2></h2>
 		<img src="" />
+		<a class="more">see further</a>
 	</div>
 </div>
 
@@ -42,72 +55,9 @@
 
 <% content_for :script do %>
 <script type="text/javascript">
-var screen_name = '<%= @screen_name %>';
-var user;
-var engine = new Tweetalytc();
-
-$(function() {
-	
-	function createChart(title, metric, user) {
-		var gchart = GoogleChart.timelineChart(user.timeline, metric);
-		var $chart = $('#templates .chart').clone();
-		$chart.children('h2').html(title);
-		$chart.children('img').attr('src', gchart.getURL());
-		return $chart;
-	}
-	
-	function createReport(userData) {
-		user = userData;
-		
-		// Create the results div
-		var $results = $('#templates .results').clone();
-		$('#loading').after($results);
-		
-		// Basic statistics
-		$results.find('.tweets').append(user.statuses_count);
-		$results.find('.followers').append(user.followers_count);
-		$results.find('.friends').append(user.friends_count);
-		
-		var timeline = user.timeline;
-		$results.find('.avg_tweets_per_day').append(timeline.average_statuses_per_day);
-		$results.find('.avg_tweet_length').append(timeline.average_status_length);
-		$results.find('.current_velocity').append(timeline.days[0].velocity)
-		
-		var followers = user.followers;
-		$results.find('.retweet_potential').append(followers.retweet_potential);
-		$results.find('.avg_retweet_potential').append(followers.avg_retweet_potential);
-		
-		// Generate the basic charts
-		var $tweetsByDay = createChart('Tweets', 'statuses', user);
-		$results.children('#charts').append($tweetsByDay);
-		
-		var $lengthByDay = createChart('Average Tweet Length', 'tweet_length', user);
-		$results.children('#charts').append($lengthByDay);
-		
-		var $velocityByDay = createChart('Velocity', 'velocity', user);
-		$results.children('#charts').append($velocityByDay);
-		
-		// Show the report
-		$('#loading').hide();
-		$results.fadeIn(500);
-	}
-	
-	// Search events
-	function user_search() {
-		var name = $('#n').val();
-		if (!name.match(/^[a-zA-Z0-9]+$/)) {
-			alert('Invalid username!');
-			return;
-		}
-		window.location = '../users/' + name;
-	}
-	$('#g').click(user_search);
-	$('#n').keydown(function(event) {
-		if (event.keyCode == 13) { user_search(); }
-	});
-	
-	// Load user information and display statistics
-	engine.loadUser(screen_name, createReport);
+$(document).ready(function() {
+	initSearch('../users/');
+	UserReport.init('<%= @screen_name %>');
 });
 </script>
 <% end %>

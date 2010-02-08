@@ -8,7 +8,7 @@ class SiteController < ApplicationController
     @title = " - About"
   end
   
-  def api
-    @title = " - API"
-  end
+  #def api
+  #  @title = " - API"
+  #end
 end

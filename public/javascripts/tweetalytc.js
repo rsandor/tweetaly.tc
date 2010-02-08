@@ -4,7 +4,9 @@
  * @author Ryan Sandor Richards
  * @copyright 2010 Ryan Sandor Richards
  */
-function Tweetalytc() {
+function Tweetalytc(screen_name) {
+	this.screen_name = screen_name;
+	
 	/**
 	 * Given two Date objects this determines if they represent different days.
 	 * @param d1 First Date object.
@@ -16,13 +18,13 @@ function Tweetalytc() {
 	};
 	
 	/**
-	 * Loads all relevant user information for a given screen name.
-   * @param screen_name Name of the user for which to fetch the information.
+	 * Loads all relevant user information.
    * @praam callback Function to call when all requests have been made.
    */
-	this.loadUser = function(screen_name, callback) {
+	this.loadUser = function(callback) {
 		var user;
 		var tweetalytc = this;
+		var screen_name = this.screen_name;
 		var twitter = new Twitter();
 		
 		// First load the user data from twitter...
@@ -35,13 +37,13 @@ function Tweetalytc() {
 					
 				// Next load the followers information...
 				twitter.getFollowers(screen_name, function(followers) {
-					user.followers = tweetalytc.processUsers(followers);
+					user.followers = tweetalytc.processFollowers(followers);
 					
-						// Finally load the friends information and make the callback.
-						twitter.getFriends(screen_name, function(friends) {
-							user.friends = tweetalytc.processUsers(friends);
-							callback(user);
-						});
+					// Finally load the friends information and make the callback.
+					twitter.getFriends(screen_name, function(friends) {
+						user.friends = tweetalytc.processFriends(friends);
+						callback(user);
+					});
 				});
 			});
 		});
@@ -74,12 +76,14 @@ function Tweetalytc() {
 	 * @return A stats hash containing as described above.
 	 */
 	this.processTimeline = function(timeline) {
+		var tweetalytc = this;
 		var stats = {
 			statuses: timeline,
 			days: [],
 			total_statuses_length: 0,
 			average_status_length: 0,
-			average_statuses_per_day: 0
+			average_statuses_per_day: 0,
+			pages: timeline.pages
 		};
 		var lastDate = null;
 		
@@ -93,7 +97,7 @@ function Tweetalytc() {
 					var lastIndex = stats.days.length-1;
 					var lastDay = stats.days[lastIndex];
 					stats.days[lastIndex].average_status_length = 
-						new Number(lastDay.total_statuses_length / lastDay.statuses.length).toFixed(2);
+						parseFloat(new Number(lastDay.total_statuses_length / lastDay.statuses.length).toFixed(2));
 				}
 				
 				// Calculate velocity if need be
@@ -121,12 +125,72 @@ function Tweetalytc() {
 		}
 		
 		if (timeline.length > 0) {
-			stats.average_status_length = new Number(stats.total_statuses_length / timeline.length).toFixed(2);
+			stats.average_status_length = parseFloat(new Number(stats.total_statuses_length / timeline.length).toFixed(2));
 		}
 		
 		if (stats.days.length > 0) {
-			stats.average_statuses_per_day = new Number(timeline.length / stats.days.length).toFixed(2);
+			stats.average_statuses_per_day = parseFloat(new Number(timeline.length / stats.days.length).toFixed(2));
 		}
+		
+		/**
+		 * Adds an additional page of 200 statuses if available.
+		 * @param callback Function to exectue when the timeline has been updated. The only
+		 *   parameter for the call back will be a boolean indicator that is true if new data
+		 *   was added and false if no new data was added (we have all the data available).
+		 */
+		stats.more = function(callback) {
+			var thisTimeline = this;
+			var twitter = new Twitter();
+			
+			twitter.getUserTimeline(screen_name, thisTimeline.pages + 1, function(timeline) {
+				if (timeline.length == 0) {
+					// No changes. Remove the "more" function and execute the callback.
+					thisTimeline.more = function(callback) { callback(false) };
+					callback(false);
+				}
+				else {
+					// Process the new timeline
+					timeline = tweetalytc.processTimeline(timeline);
+					
+					// Update statuses list
+					thisTimeline.statuses = thisTimeline.statuses.concat(timeline.statuses);
+					
+					// Update the days list
+					var lastDay = thisTimeline.days.pop();
+					var firstDay = timeline.days.pop();
+					if (!tweetalytc.differentDay(firstDay.date, lastDay.date)) {
+						lastDay.statuses = lastDay.statuses.concat(firstDay.statuses)
+						lastDay.total_statuses_length += firstDay.total_statuses_length;
+						lastDay.average_status_length = parseFloat(new Number(
+							(lastDay.average_status_length + firstDay.average_status_length) / 2
+						).toFixed(2));
+						lastDay.velocity = firstDay.velocity;
+						thisTimeline.days.push(lastDay);
+					}
+					else {
+						thisTimeline.days.push(lastDay);
+						thisTimeline.days.push(firstDay);
+					}
+					thisTimeline.days = thisTimeline.days.concat(timeline.days);
+					
+					// Update flat statistics
+					thisTimeline.total_statuses_length += timeline.total_statuses_length;
+			
+					thisTimeline.average_status_length = parseFloat(new Number(
+						(timeline.average_status_length + thisTimeline.average_status_length) / 2
+					).toFixed(2));
+			
+					thisTimeline.average_statuses_per_day = parseFloat(new Number(
+						(thisTimeline.average_statuses_per_day + timeline.average_statuses_per_day) / 2
+					).toFixed(2));
+			
+					thisTimeline.pages += 1;
+					
+					// Execute the callback function
+					callback(true);
+				}
+			});
+		};
 		
 		return stats;
 	};
@@ -141,7 +205,7 @@ function Tweetalytc() {
 	 *
 	 * @param users Users to process.
 	 */
-	this.processUsers = function(users) {
+	this._processUsers = function(users) {
 		var stats = {
 			users: users,
 			retweet_potential: 0,
@@ -159,5 +223,58 @@ function Tweetalytc() {
 		return stats;
 	};
 	
+	/**
+	 * Processes a list of followers.
+	 * @param followers Followers to process.
+	 * @return A hash containing stats about the followers list.
+	 * @see _processUsers
+	 */
+	this.processFollowers = function(followers) {
+		var stats = this._processUsers(followers.users);
+		stats.next_cursor = followers.next_cursor_str;
+		var tweetalytc = this;
+		var screen_name = this.screen_name;
+		
+		/**
+		 * Requests for more followers to sample from.
+		 * @param callback Function to be called after response has been returned.
+		 *   The function is supposed to have a single boolean parameter than will
+		 *   be set to true if new data has been added, and false otherwise.
+		 */
+		stats.more = function(callback) {
+			var thisFollowers = this;
+			var twitter = new Twitter();
+			
+			twitter.getFollowers(screen_name, function(followers) {
+				if (typeof(followers.users.length) == "undefined") {
+					thisFollowers.more = function(callback) { callback(false); };
+					callback(false);
+				}
+				else {
+					followers = tweetalytc.processFollowers(followers);
+					thisFollowers.users = thisFollowers.users.concat(followers.users);
+					thisFollowers.retweet_potential += followers.retweet_potential;
+					thisFollowers.avg_retweet_potential = parseFloat(new Number(
+						(Number(thisFollowers.avg_retweet_potential) + Number(followers.avg_retweet_potential)) / 2
+					).toFixed(2));
+					thisFollowers.nextCursor = followers.nextCursor;
+					callback(true);
+				}
+			}, this.next_cursor);
+		};
+		
+		return stats;
+	}
+	
+	/**
+	 * Processes a list of friends.
+	 * @param friends Friends to process.
+	 * @return A hash containing stats about the friends list.
+	 * @see _processUsers
+	 */
+	this.processFriends = function(friends) {
+		var stats = this._processUsers(friends);
+		return stats;
+	};
 	
 }

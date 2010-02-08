@@ -14,6 +14,27 @@ function GoogleChart() {
 	this.axisPositions = {}; // chxp
 	this.markers = []; 	// chm
 	
+
+	/**
+	 * Encodes a data set using simple encoding.
+	 * @param set Data set to encode.
+	 * @return Encoded set.
+	 */
+	this.simpleEncode = function(set) {
+		var min = null, max = 0;
+		for (var j = 0; j < set.length; j++) {
+			if (max < parseFloat(set[j])) {max = parseFloat(set[j]);}
+			if (min == null || min > parseFloat(set[j])) {min = parseFloat(set[j]);}
+		}
+		
+		var c = 61/(max-min);
+		var s = "s:";
+		for (var k in set) { 
+			s += GoogleChart.SIMPLE_ENCODE[61*(set[k]-min)/(max-min) | 0];	
+		}
+		return s;
+	}
+	
 	/**
 	 * Evaluates the URL for the chart.
 	 * @return The image URL for the chart.
@@ -29,8 +50,7 @@ function GoogleChart() {
 		// Add datasets
 		var sets = [];
 		for (var i in this.dataSets) {
-			var set = this.dataSets[i];
- 			sets.push('t:' + set.join(','));
+ 			sets.push(this.simpleEncode(this.dataSets[i]));
 		}
 		url += '&chd=' + sets.join('|');
 		
@@ -186,7 +206,23 @@ function GoogleChart() {
 	this.setDataScaling = function(min, max) {
 		this.params['chds'] = [min, max].join(',');
 	};
+	
+	/**
+	 * Helper function for construcing date labels.
+	 * @param days A list of days.
+	 * @param i Index in the list for which to construct the label.
+	 * @return A label formatted as "MM/DD", "M/DD", "MM/D", or "M/D"
+	 */
+	this.dayLabel = function(days, i) {
+		return (days[i].date.getMonth()+1)+'/'+days[i].date.getDate();
+	}
 }
+
+GoogleChart.SIMPLE_ENCODE = [
+	'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+	'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
+	'0','1','2','3','4','5','6','7','8','9'
+];
 
 /**
  * Chart type constants.
@@ -242,7 +278,7 @@ GoogleChart.timelineChart = function(stats, metric, dataPoints, frequency) {
 	if (metric != 'statuses' && metric != 'tweet_length' && metric != 'velocity') {
 		metric = 'statuses';
 	}
-	if (dataPoints == null) {	dataPoints = 10; }
+	if (dataPoints == null) {	dataPoints = 5; }
 	if (frequency == null) { frequency = GoogleChart.DAILY;	}
 	
 	var chart = new GoogleChart();
@@ -250,8 +286,9 @@ GoogleChart.timelineChart = function(stats, metric, dataPoints, frequency) {
 	var labels = [];
 	var max = 0;
 	var min = null;
+	var maxLabels = 5;
 	
-	// Construct dataset and labels for a daily chart.
+	// Construct dataset for the chart.
 	if (frequency == GoogleChart.DAILY) {
 		for (var i = 0; i < stats.days.length; i++) {
 			if (dataPoints == 0) { break; }
@@ -268,34 +305,46 @@ GoogleChart.timelineChart = function(stats, metric, dataPoints, frequency) {
 				count = stats.days[i].velocity;
 			}
 			
-			if (count > max) { max = count; }
-			if (min == null || count < min) { min = count; }
+			if (count > max) { max = parseFloat(count); }
+			if (min == null || count < min) { min = parseFloat(count); }
 			
 			dataSet.push(count);
-			
-			var date = stats.days[i].date;
-			var dateLabel = (date.getMonth()+1) + "/" + date.getDate();
-			labels.push(escape(dateLabel));
 		}
+		
+		// Ensure an odd number of data points
+		if (dataSet.length % 2 == 0 && dataSet.length > maxLabels) {
+			dataSet.pop();
+		}
+		
 		dataSet.reverse();
-		labels.reverse();
 	}
-	
-	// Add data set to the chart
 	chart.addDataSet(dataSet);
 	
-	// Label and style the chart
-	if (min < 0 && max >= -min) {
-		min = -max;
-	}
-	else if (min < 0 && max < -min) {
-		max = -min;
+	// Construct x-axis labels for the chart
+	var numDays = dataSet.length;
+	if (numDays <= maxLabels) {
+		for (var i = numDays; i > 0; i--) {
+			labels.push(chart.dayLabel(stats.days, i-1));
+		}
 	}
 	else {
-		min = 0;
-	}
+		var set = [0, parseInt(numDays/2), numDays];
+		var toAdd = [];
+		
+		for (var i = 0; i < set.length-1; i++)
+			toAdd.push(parseInt(Math.floor((set[i+1] - 1) - (set[i] + 1)/2)));
+		for (var k = 0; k < toAdd.length; k++)
+			set.push(toAdd[k]);
+		set.sort(function(a,b) { return a-b; });
+		
+		for (var k = set.length; k > 0; k--) {
+			labels.push( chart.dayLabel(stats.days, set[k-1]) );
+		}
+	}	
 
-	
+	// Construct y-axis labels for the chart
+	min = parseFloat(min);
+	max = parseFloat(max);
 	var yLabels = [
 		new Number(min).toFixed(0),
 		new Number(min + (max-min) / 4).toFixed(0),
@@ -304,12 +353,16 @@ GoogleChart.timelineChart = function(stats, metric, dataPoints, frequency) {
 		new Number(max).toFixed(0)
 	];
 	
+	// Label and style the chart
 	chart.addAxisLabels('x', labels);
 	chart.addAxisLabels('y', yLabels);
 	chart.setDataScaling(min, max);
-	chart.setChartColor('555555');
-	chart.addChartMarker(GoogleChart.CIRCLE, '000099', 0, -1, 5);
-
+	chart.setChartColor('777777');
+	
+	if (dataSet.length <= 20) {
+		chart.addChartMarker(GoogleChart.CIRCLE, '000099', 0, -1, 5);
+	}
+	
 	if (min < 0) {
 		chart.addRangeMarker(GoogleChart.RANGE_HORIZONTAL, 'BBBBBB', .49, .50);
 	}

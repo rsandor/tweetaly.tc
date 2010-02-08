@@ -18,8 +18,8 @@
 			<div class="content"><%= yield :content %></div>
 			<div id="footer">
 				<p id="bottom-nav">
-					<a href="/">home</a></li>
-					<a href="about">about</a></li>
+					<a href="../">home</a></li>
+					<a href="../about">about</a></li>
 				</p>
 				<p class="copyright">
 					Copyright 2010 Ryan Sandor Richards (<a href="http://twitter.com/rsandor" target="_blank">@rsandor</a>)
@@ -27,7 +27,7 @@
 				</p>
 			</div>
 		</div>
-<%= javascript_include_tag "jquery-1.4.min", "twitter", "tweetalytc", "googlechart" %>
+<%= javascript_include_tag "jquery-1.4.min", "twitter", "tweetalytc", "googlechart", "search", "user" %>
 <%= yield :script %>
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");

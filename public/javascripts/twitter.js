@@ -8,6 +8,7 @@ function Twitter() {
 	
 	/**
 	 * Makes a request to the twitter API.
+	 * TODO Account for rate limiting
 	 * @param params Request parameters (no need for URL encoding).
 	 * @param callback Function to call when the response is obtained.
 	 */
@@ -29,6 +30,10 @@ function Twitter() {
 			$.getJSON(url, callback)
 		}
 	};
+	
+	this.rateLimitStatus = function(callback) {
+		this.makeRequest('account/rate_limit_status', {}, callback);
+	}
 	
 	/** 
 	 * Retrieves user information from twitter.
@@ -53,10 +58,11 @@ function Twitter() {
 		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
 			throw "Invalid screen name: " + screen_name;
 		}
-		this.makeRequest(
-			'statuses/user_timeline', 
-			{screen_name: screen_name, page: page, count: 200}, 
-			callback);
+
+		this.makeRequest('statuses/user_timeline', {screen_name: screen_name, page: page, count: 200}, function(timeline) {
+			timeline.pages = 1;
+			callback(timeline);
+		});
 	};
 	
 	/**
@@ -89,7 +95,8 @@ function Twitter() {
 				totalTimeline = totalTimeline.concat(timeline);
 				pages--;
 				if (pages == 0 || timeline.length == 0) {
-					callback(totalTimeline)
+					totalTimeline.pages = pages;
+					callback(totalTimeline);
 				}
 				else {
 					request(page+1)
@@ -106,19 +113,25 @@ function Twitter() {
 	 * @param screen_name Name of the user for which to fetch the followers.
 	 * @param callback Function to call when the response has been returned.
 	 */
-	this.getFollowers = function(screen_name, callback) {
+	this.getFollowers = function(screen_name, callback, cursor) {
 		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
 			throw "Invalid screen name: " + screen_name;
 		}
-		this.makeRequest('statuses/followers', {screen_name: screen_name}, callback);
+		if (cursor == null) {
+			cursor = -1;
+		}
+		this.makeRequest('statuses/followers', {screen_name: screen_name, cursor: cursor}, callback);
 	};
 	
 	/** 
 	 * Returns a detailed list of the first 100 friends of a given user.
+	 *
+	 * TODO Utilize cursor param and abstract into private function with getFollowers().
+	 * 
 	 * @param screen_name Name of the user for which to fetch the friends.
 	 * @param callback Function to call when the response has been returned.
 	 */
-	this.getFriends = function(screen_name, callback) {
+	this.getFriends = function(screen_name, callback, cursor) {
 		if (!screen_name.match(/^[a-zA-Z0-9]+$/)) {
 			throw "Invalid screen name: " + screen_name;
 		}

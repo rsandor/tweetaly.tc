@@ -7,20 +7,5 @@
 <% end %>
 
 <% content_for :script do %>
-<script type="text/javascript">
-$(function() {
-	function user_search() {
-		var name = $('#n').val();
-		if (!name.match(/^[a-zA-Z0-9]+$/)) {
-			alert('Invalid username!');
-			return;
-		}
-		window.location = 'users/' + name;
-	}
-	$('#g').click(user_search);
-	$('#n').keydown(function(event) {
-		if (event.keyCode == 13) { user_search(); }
-	});
-});
-</script>
+<script type="text/javascript">$(document).ready(function() {initSearch()});</script>
 <% end %>
